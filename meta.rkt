@@ -147,6 +147,16 @@
             name
             (seval (define-value-exp def-exp) environ))))))
 
+;; Function definition
+#;
+(define (func-define-exp? exp)
+  (and (list? exp)
+       (= (length exp) 3)
+       (list? (cadr exp))
+       (>= (length (cadr exp)) 1)
+       (andmap symbol? (cadr exp))
+       (eq? (car exp) 'define)))
+
 ;; "begin" expression
 (define (begin-exp? exp)
   (and (list? exp)
@@ -224,9 +234,26 @@
 ;; Tests
 
 (define code
-  '(define foo
-     (lambda (x)
-       (lambda (y) (+ x y)))))
+  '(begin
+
+     ;; Closure
+     (define foo
+       (lambda (x)
+         (lambda (y) (+ x y))))
+     
+     (display ((foo 5) 19))
+     (newline)
+     (define bar (foo 10))
+     (display (bar 3))
+     (newline)
+
+     ;; Set
+     (define z 10)
+     (display z)
+     ((lambda () (set! z 11)))
+     (newline)
+     (display z)
+     ))
+
 
 (seval code globalenv)
-(seval '((foo 5) 19) globalenv)
