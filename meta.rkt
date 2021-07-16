@@ -96,7 +96,9 @@
         (earguments (map
                      (λ (arg) (seval arg environ))
                      arguments))]
-    (apply eproc earguments)))
+    (if (number? eproc)
+        (apply * (cons eproc earguments))
+        (apply eproc earguments))))
 
 
 (define (primitive? exp)
@@ -253,6 +255,12 @@
      ((lambda () (set! z 11)))
      (newline)
      (display z)
+     (newline)
+
+     ;; Horrible auto-multiplication feature
+     (display (4 3))
+     (newline)
+     (display ((+ 4 2) 3))
      ))
 
 
