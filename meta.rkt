@@ -51,6 +51,13 @@
 (define (define-in-environment environ name value)
   (hash-set! (env-table environ) name value))
 
+(define (define-multi-in-environment environ argmap)
+  (for-each (λ (pair) (define-in-environment
+                        environ
+                        (car pair)
+                        (cdr pair)))
+            argmap))
+
 (define (set-in-environment environ name value)
   (let [(lookup-result (safe-lookup-environment environ name))]
     (let [(success? (car lookup-result))
@@ -202,17 +209,28 @@
 
 (define (make-lambda argnames body environ)
   (lambda args
-    (if (not (= (length args) (length argnames)))
+    (if (> (length args) (length argnames))
+        ;; Error if too many arguments
         (error "Arity error, expected/received:" (length argnames) (length args))
         (let [(localenv (make-environment environ))
-              (argmap (map cons argnames args))]
-          (for-each (λ (pair) (define-in-environment
-                                localenv
-                                (car pair)
-                                (cdr pair)))
-                    argmap)
-          (seval-statements-block body localenv)))))
-          
+              (argmap (zip argnames args))]
+          (define-multi-in-environment localenv argmap)
+          ;; Partial application if too few arguments
+          (if (< (length args) (length argnames))
+              (let [(remaining-argnames (safe-drop argnames (length args)))]
+                (make-lambda remaining-argnames body localenv))
+              ;; Otherwise just apply
+              (seval-statements-block body localenv))))))
+  
+(define (zip l1 l2)
+  (cond [(empty? l1) empty]
+        [(empty? l2) empty]
+        [else
+         (cons (cons (car l1) (car l2))
+               (zip (cdr l1) (cdr l2)))]))
+
+(define (safe-drop l n)
+  (drop l (min n (length l))))
 
 ;; set!
 
@@ -264,6 +282,14 @@
      (display ((+ 4 2) 3))
      (newline)
      (display (10 10 10))
+
+     ;; autocurry
+     (define add (lambda (x y) (+ x y)))
+     (newline)
+     (define add2 (add 2))
+     (display add2)
+     (newline)
+     (display (add2 5))
      ))
 
 
