@@ -284,12 +284,16 @@
      (display (10 10 10))
 
      ;; autocurry
-     (define add (lambda (x y) (+ x y)))
+     (define add (lambda (x y z) (+ x y z)))
      (newline)
      (define add2 (add 2))
      (display add2)
      (newline)
-     (display (add2 5))
+     (display (add2 5 7))
+     (define add2_5 (add 2 5))
+     (newline)
+     (display (add2_5 10))
+     
      ))
 
 
