@@ -92,14 +92,15 @@
   )
 
 (define (sapply proc arguments environ)
-  (let [(eproc (seval proc environ))
+  (let [(eproc_or_num (seval proc environ))
         (earguments (map
                      (λ (arg) (seval arg environ))
                      arguments))]
-    (if (number? eproc)
-        (apply * (cons eproc earguments))
-        (apply eproc earguments))))
-
+    ;; If we have a number in function position, multiply it
+    (if (number? eproc_or_num)
+        (apply * (cons eproc_or_num earguments))
+        (apply eproc_or_num earguments))))
+  
 
 (define (primitive? exp)
   (or (number? exp)
@@ -261,6 +262,8 @@
      (display (4 3))
      (newline)
      (display ((+ 4 2) 3))
+     (newline)
+     (display (10 10 10))
      ))
 
 
