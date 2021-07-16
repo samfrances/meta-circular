@@ -34,22 +34,30 @@
 (define (lookup-environment environ name)
   (let [(lookup-result (safe-lookup-environment environ name))]
     (let [(success? (car lookup-result))
-          (value (cdr lookup-result))]
+          (value (cadr lookup-result))]
       (if (not success?)
           (error "Name not found:" name)
           value))))
 
 (define (safe-lookup-environment environ name)
   (if (null? environ)
-      (cons #false null)
+      (list #false null environ)
       (let [(table (car environ))
             (parent (cdr environ))]
         (if (hash-has-key? table name)
-            (cons #true (hash-ref table name))
+            (list #true (hash-ref table name) environ)
             (safe-lookup-environment parent name)))))
 
 (define (define-in-environment environ name value)
-  (hash-set! (car environ) name value))
+  (hash-set! (env-table environ) name value))
+
+(define (set-in-environment environ name value)
+  (let [(lookup-result (safe-lookup-environment environ name))]
+    (let [(success? (car lookup-result))
+          (found-in (caddr lookup-result))]
+      (if (not success?)
+          (error "Name not found:" name)
+          (hash-set! (env-table found-in) name value)))))
 
 (define globalenv (make-environment null))
 (define-in-environment globalenv '+ +)
@@ -76,6 +84,8 @@
          (seval-begin-exp exp environ)]
         [(lambda? exp)
          (seval-lambda exp environ)]
+        [(set-exp? exp)
+         (seval-set-exp exp environ)]
         [(list? exp)
          (sapply (car exp) (cdr exp) environ)]
         [else (error "Bad expression" exp)])
@@ -172,7 +182,7 @@
   (cadr exp))
 
 (define (lambda-body exp)
-  (caddr exp))
+  (cddr exp))
 
 (define (seval-lambda exp environ)
   (make-lambda (lambda-header exp) (lambda-body exp) environ))
@@ -188,17 +198,35 @@
                                 (car pair)
                                 (cdr pair)))
                     argmap)
-          (seval body localenv)))))
+          (seval-statements-block body localenv)))))
           
 
+;; set!
 
+(define (set-exp? exp)
+  (and (list? exp)
+       (= (length exp) 3)
+       (symbol? (cadr exp))
+       (eq? (car exp) 'set!)))
 
+(define (set-exp-name exp)
+  (cadr exp))
+
+(define (set-exp-value exp)
+  (caddr exp))
+
+(define (seval-set-exp exp environ)
+  (set-in-environment
+   environ
+   (set-exp-name exp)
+   (seval (set-exp-value exp) environ)))
 
 ;; Tests
-#;
+
 (define code
-  '(lambda (x)
-     (lambda (y) (+ x y))))
+  '(define foo
+     (lambda (x)
+       (lambda (y) (+ x y)))))
 
-(define code '(define x 5))
-
+(seval code globalenv)
+(seval '((foo 5) 19) globalenv)
