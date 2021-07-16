@@ -209,18 +209,16 @@
 
 (define (make-lambda argnames body environ)
   (lambda args
-    (if (> (length args) (length argnames))
-        ;; Error if too many arguments
-        (error "Arity error, expected/received:" (length argnames) (length args))
-        (let [(localenv (make-environment environ))
-              (argmap (zip argnames args))]
-          (define-multi-in-environment localenv argmap)
-          ;; Partial application if too few arguments
-          (if (< (length args) (length argnames))
-              (let [(remaining-argnames (safe-drop argnames (length args)))]
-                (make-lambda remaining-argnames body localenv))
-              ;; Otherwise just apply
-              (seval-statements-block body localenv))))))
+    (let [(localenv (make-environment environ))
+          (argmap (zip argnames args))]
+      (define-multi-in-environment localenv argmap)
+      (cond [(> (length args) (length argnames))   ;; Error if too many arguments
+             (error "Arity error, expected/received:" (length argnames) (length args))]
+            [(< (length args) (length argnames))    ;; Partial application if too few arguments
+             (let [(remaining-argnames (safe-drop argnames (length args)))]
+               (make-lambda remaining-argnames body localenv))]
+            [else
+             (seval-statements-block body localenv)]))))   ;; Otherwise just apply
   
 (define (zip l1 l2)
   (cond [(empty? l1) empty]
