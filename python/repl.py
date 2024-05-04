@@ -1,6 +1,6 @@
 
-from src.parser import parse
-from src.interpreter import seval, create_global_env
+from scheme.parser import parse
+from scheme.interpreter import seval, create_global_env
 
 global_env = create_global_env()
 

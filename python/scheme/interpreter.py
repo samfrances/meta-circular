@@ -42,6 +42,10 @@ def create_global_env():
         "+",
         lambda x, y: x + y
     )
+    env.define(
+        "display",
+        lambda x: print(x)
+    )
     return env
 
 
