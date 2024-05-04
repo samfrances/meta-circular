@@ -88,7 +88,6 @@ class CloseParen(TokenProcessor):
             raise SyntaxError("Unmatched )")
         top = stack.pop()
         if top.closer != self._closer:
-            print(top.closer, self._closer)
             raise SyntaxError(f"Expected closing '{top.closer}'")
         if stack:
             # Add completed list to previous list in stack
@@ -130,7 +129,6 @@ def read(tokens: Generator[TokenProcessor, None, None]):
     stack: List[ListExpression] = []
 
     for token in tokens:
-        print(token)
         token.process(stack, result)
 
     if stack:
