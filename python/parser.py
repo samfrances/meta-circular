@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from typing import Generator, List, Union
+from typing import Dict, Generator, List, Literal, Tuple, Union
+
+
+OPENER_TO_CLOSER: Dict[str, Literal[")", "]", "}"]] = {
+    "(": ")",
+    "[": "]",
+    "{": "}",
+}
 
 
 def tokenize(chars: str) -> Generator[TokenProcessor, None, None]:
@@ -14,15 +21,12 @@ def tokenize(chars: str) -> Generator[TokenProcessor, None, None]:
         .split()
     )
 
-    OPENERS = ("(", "[", "{")
-
-    CLOSERS = (")", "]", "}")
-
-    OPENER_TO_CLOSER = dict(zip(OPENERS, CLOSERS))
+    OPENERS = tuple(OPENER_TO_CLOSER.keys())
+    CLOSERS = tuple(OPENER_TO_CLOSER.values())
 
     for s_token in STRING_TOKENS:
         if s_token in OPENERS:
-            yield OpenParen(OPENER_TO_CLOSER[s_token])
+            yield OpenParen(s_token)
         elif s_token in CLOSERS:
             yield CloseParen(s_token)
         else:
@@ -31,8 +35,13 @@ def tokenize(chars: str) -> Generator[TokenProcessor, None, None]:
 
 class ListExpression:
 
-    def __init__(self, closer: str):
-        self._closer = closer
+    def __init__(self, opening_paren: str):
+        """
+        Create a ListExpression for the parser stack,
+        specifying the symbol used to close that list
+        expression
+        """
+        self._closer = OPENER_TO_CLOSER[opening_paren]
         self._items: List[TokenProcessor] = []
 
     def append(self, item: TokenProcessor):
@@ -50,24 +59,28 @@ class ListExpression:
 
 
 class TokenProcessor:
+    """
+    Base class, subclasses of which are specialised to parse a particular
+    sort of token
+    """
 
     def process(self, stack, result):
-        pass
+        raise NotImplementedError()
 
 
 class OpenParen(TokenProcessor):
 
-    def __init__(self, paren_type: str):
-        self._paren_type = paren_type
+    def __init__(self, token):
+        self._token = token
 
     def process(self, stack, result):
-        stack.append(ListExpression(self._paren_type))
+        stack.append(ListExpression(self._token))
 
 
 class CloseParen(TokenProcessor):
 
-    def __init__(self, closer: str):
-        self._closer = closer
+    def __init__(self, token: str):
+        self._closer = token
 
     def process(self, stack, result):
         if not stack:
