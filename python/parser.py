@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, Generator, List, Literal, Tuple, Union
 
+from .common import ParsedExpression
 
 OPENER_TO_CLOSER: Dict[str, Literal[")", "]", "}"]] = {
     "(": ")",
@@ -118,9 +119,6 @@ class Atom(TokenProcessor):
             pass
 
         return self._token
-
-
-ParsedExpression = List[Union[float, int, str, "ParsedExpression"]]
 
 
 def read(tokens: Generator[TokenProcessor, None, None]):

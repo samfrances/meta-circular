@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
+
+from .common import ParsedExpression
 
 
 class NullEnvironment:
@@ -30,3 +32,39 @@ class Environment:
 
     def define(self, key: str, value):
         self._table[key] = value
+
+
+def create_global_env():
+    env = Environment()
+    env.define(
+        "+",
+        lambda x, y: x + y
+    )
+    return env
+
+
+def seval(exp: ParsedExpression, env: Environment):
+    if is_primitive(exp):
+        return exp
+    if is_symbol(exp):
+        return env[exp]
+    if is_list(exp):
+        func_name = exp[0]
+        func_args = exp[1:]
+        return sapply(func_name, func_args, env)
+
+
+def sapply(proc_name: str, proc_args: List[ParsedExpression], env: Environment):
+    proc = seval(proc_name, env)
+    args = [seval(a, env) for a in proc_args]
+    return proc(*args)
+
+
+def is_primitive(exp: ParsedExpression):
+    return isinstance(exp, float) or isinstance(exp, int)
+
+def is_symbol(exp: ParsedExpression):
+    return isinstance(exp, str)
+
+def is_list(exp: ParsedExpression):
+    return isinstance(exp, list)
