@@ -1,26 +1,22 @@
 from __future__ import annotations
 
-from typing import Generator, List
+from typing import Generator, List, Union
 
 
 def tokenize(chars: str) -> Generator[TokenProcessor, None, None]:
     STRING_TOKENS = (
         chars.replace("(", " ( ")
-             .replace(")", " ) ")
-             .replace("[", " [ ")
-             .replace("]", " ] ")
-             .replace("{", " { ")
-             .replace("}", " } ")
-             .split()
+        .replace(")", " ) ")
+        .replace("[", " [ ")
+        .replace("]", " ] ")
+        .replace("{", " { ")
+        .replace("}", " } ")
+        .split()
     )
 
-    OPENERS = (
-        "(", "[", "{"
-    )
+    OPENERS = ("(", "[", "{")
 
-    CLOSERS = (
-        ")", "]", "}"
-    )
+    CLOSERS = (")", "]", "}")
 
     OPENER_TO_CLOSER = dict(zip(OPENERS, CLOSERS))
 
@@ -37,9 +33,9 @@ class ListExpression:
 
     def __init__(self, closer: str):
         self._closer = closer
-        self._items = []
+        self._items: List[TokenProcessor] = []
 
-    def append(self, item):
+    def append(self, item: TokenProcessor):
         self._items.append(item)
 
     def __getitem__(self, key):
@@ -111,9 +107,13 @@ class Atom(TokenProcessor):
         return self._token
 
 
+ParsedExpression = List[Union[float, int, str, "ParsedExpression"]]
+
+
 def read(tokens: Generator[TokenProcessor, None, None]):
-    result = []
-    stack = []
+
+    result: List[ParsedExpression] = []
+    stack: List[ListExpression] = []
 
     for token in tokens:
         token.process(stack, result)
@@ -126,3 +126,8 @@ def read(tokens: Generator[TokenProcessor, None, None]):
 
 def parse(s: str):
     return read(tokenize(s))
+
+
+# References:
+# https://www.norvig.com/lispy.html
+# https://www.freecodecamp.org/news/s-expressions-in-javascript/
