@@ -50,6 +50,8 @@ def seval(exp: ParsedExpression, env: Environment):
         return exp
     if is_symbol(exp):
         return env[exp]
+    if is_define_exp(exp):
+        return seval_define(exp, env)
     if is_list(exp):
         func_name = exp[0]
         func_args = exp[1:]
@@ -70,3 +72,19 @@ def is_symbol(exp: ParsedExpression):
 
 def is_list(exp: ParsedExpression):
     return isinstance(exp, list)
+
+
+# Define
+
+def is_define_exp(exp: ParsedExpression):
+    return (
+        is_list(exp)
+        and len(exp) == 3
+        and exp[0] == "define"
+    )
+
+def seval_define(exp: ParsedExpression, env: Environment):
+    name = exp[1]
+    definition = exp[2]
+    value = seval(definition, env)
+    env.define(name, value)
