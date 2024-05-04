@@ -104,8 +104,11 @@ class Atom(TokenProcessor):
         self._token = token
 
     def process(self, stack, result):
-        top = stack[-1]
-        top.append(self._typed_atom())
+        if not stack:
+            result.append(self._typed_atom())
+        else:
+            top = stack[-1]
+            top.append(self._typed_atom())
 
     def _typed_atom(self):
         try:
@@ -127,6 +130,7 @@ def read(tokens: Generator[TokenProcessor, None, None]):
     stack: List[ListExpression] = []
 
     for token in tokens:
+        print(token)
         token.process(stack, result)
 
     if stack:

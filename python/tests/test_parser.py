@@ -24,7 +24,10 @@ from ..parser import parse
         ("(a b (c d))", [["a", "b", ["c", "d"]]]),
         ("(a b (c d)) (a)", [["a", "b", ["c", "d"]], ["a"]]),
         ("(1)", [[1]]),
-        ("(1.2)", [[1.2]])
+        ("(1.2)", [[1.2]]),
+        ("a", ["a"]),
+        ("a (foo 1 2) b", ["a", ["foo", 1, 2], "b"]),
+        ("1", [1])
     )
 )
 def test_parser_on_valid_inputs(input, parsed):
