@@ -29,3 +29,27 @@ from ..parser import parse
 )
 def test_parser_on_valid_inputs(input, parsed):
     assert parse(input) == parsed
+
+
+MISSING_EXPECTED = "Missing expected"
+UNMATCHED = "Unmatched"
+
+
+@pytest.mark.parametrize(
+    "input, error_message",
+    (
+        ("(", MISSING_EXPECTED),
+        (")", UNMATCHED),
+        ("(a b c))", UNMATCHED),
+        ("((a b c)", MISSING_EXPECTED),
+        ("[", MISSING_EXPECTED),
+        ("]", UNMATCHED),
+        ("[a b c]]", UNMATCHED),
+        ("[[a b c]", MISSING_EXPECTED),
+        ("[a b c}", "Expected closing"),
+    )
+)
+def test_parser_on_mismatched_parens(input, error_message):
+    with pytest.raises(SyntaxError) as e:
+        parse(input)
+    assert error_message in str(e.value)
