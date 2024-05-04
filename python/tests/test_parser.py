@@ -2,10 +2,14 @@ import pytest
 
 from scheme.parser import parse
 
+
 @pytest.mark.parametrize(
     "input,parsed",
     (
-        ("", [],),
+        (
+            "",
+            [],
+        ),
         ("()", [[]]),
         ("[]", [[]]),
         ("{}", [[]]),
@@ -27,8 +31,8 @@ from scheme.parser import parse
         ("(1.2)", [[1.2]]),
         ("a", ["a"]),
         ("a (foo 1 2) b", ["a", ["foo", 1, 2], "b"]),
-        ("1", [1])
-    )
+        ("1", [1]),
+    ),
 )
 def test_parser_on_valid_inputs(input, parsed):
     assert parse(input) == parsed
@@ -50,7 +54,7 @@ UNMATCHED = "Unmatched"
         ("[a b c]]", UNMATCHED),
         ("[[a b c]", MISSING_EXPECTED),
         ("[a b c}", "Expected closing"),
-    )
+    ),
 )
 def test_parser_on_mismatched_parens(input, error_message):
     with pytest.raises(SyntaxError) as e:

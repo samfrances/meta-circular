@@ -2,11 +2,13 @@ import pytest
 
 from scheme.interpreter import Environment
 
+
 def test_flat_environment_miss():
 
     env = Environment()
     with pytest.raises(KeyError):
         env["foo"]
+
 
 def test_flat_environment_hit():
 
@@ -91,20 +93,11 @@ def test_more_realistic_example():
 
     env = Environment(middle_env)
 
-    global_contents = {
-        "foo": 1,
-        "bar": 99,
-        "incr": lambda x: x+1
-    }
+    global_contents = {"foo": 1, "bar": 99, "incr": lambda x: x + 1}
 
-    middle_contents = {
-        "baz": 99,
-        "add": lambda x, y: x + y
-    }
+    middle_contents = {"baz": 99, "add": lambda x, y: x + y}
 
-    env_contents = {
-        "one": 2
-    }
+    env_contents = {"one": 2}
 
     for key, val in global_contents.items():
         global_env.define(key, val)

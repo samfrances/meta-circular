@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import operator
 from typing import Any, Dict, List, Optional, TypeGuard
 
 from .common import ParsedExpression, ParsedExpressionList
@@ -13,7 +14,7 @@ class NullEnvironment:
 
 class Environment:
 
-    _enclosing: Environment|NullEnvironment
+    _enclosing: Environment | NullEnvironment
 
     def __init__(self, enclosing: Optional[Environment] = None):
         self._enclosing = NullEnvironment() if enclosing is None else enclosing
@@ -38,14 +39,11 @@ class Environment:
 
 def create_global_env():
     env = Environment()
-    env.define(
-        "+",
-        lambda x, y: x + y
-    )
-    env.define(
-        "display",
-        lambda x: print(x)
-    )
+    env.define("+", operator.add)
+    env.define("-", lambda x, y=None: -x if y is None else x - y)
+    env.define("*", operator.mul)
+    env.define("/", operator.truediv)
+    env.define("display", lambda x: print(x))
     return env
 
 
@@ -70,11 +68,13 @@ def sapply(proc_name: str, proc_args: List[ParsedExpression], env: Environment):
     return proc(*args)
 
 
-def is_primitive(exp: ParsedExpression) -> float|int:
+def is_primitive(exp: ParsedExpression) -> float | int:
     return isinstance(exp, float) or isinstance(exp, int)
+
 
 def is_symbol(exp: ParsedExpression) -> TypeGuard[str]:
     return isinstance(exp, str)
+
 
 def is_list(exp: ParsedExpression) -> TypeGuard[ParsedExpressionList]:
     return isinstance(exp, list)
@@ -82,12 +82,10 @@ def is_list(exp: ParsedExpression) -> TypeGuard[ParsedExpressionList]:
 
 # Define
 
+
 def is_define_exp(exp: ParsedExpression) -> TypeGuard[ParsedExpressionList]:
-    return (
-        is_list(exp)
-        and len(exp) == 3
-        and exp[0] == "define"
-    )
+    return is_list(exp) and len(exp) == 3 and exp[0] == "define"
+
 
 def seval_define(exp: ParsedExpressionList, env: Environment):
     name = exp[1]
