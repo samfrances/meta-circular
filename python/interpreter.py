@@ -31,6 +31,8 @@ class Environment:
         self._table[key] = value
 
     def define(self, key: str, value):
+        if key in self._table:
+            raise Exception(f"'{key}' already defined.")
         self._table[key] = value
 
 

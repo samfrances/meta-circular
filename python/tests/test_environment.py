@@ -26,6 +26,15 @@ def test_flat_environment_set_before_define():
         env[key] = value
 
 
+def test_define_twice():
+
+    env = Environment()
+    key = "bar"
+    env.define(key, 1)
+    with pytest.raises(Exception):
+        env.define(key, 2)
+
+
 def test_flat_environment_set_after_define():
     env = Environment()
     key = "foo"
