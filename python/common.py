@@ -1,3 +1,10 @@
 from typing import List, Union
 
-ParsedExpression = List[Union[float, int, str, "ParsedExpression"]]
+ParsedExpressionList = List[Union[float, int, str, "ParsedExpression"]]
+
+ParsedExpression = Union[
+    float, int, str,
+    ParsedExpressionList
+]
+
+
