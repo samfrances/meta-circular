@@ -1,6 +1,6 @@
 import pytest
 
-from ..parser import parse
+from scheme.parser import parse
 
 @pytest.mark.parametrize(
     "input,parsed",

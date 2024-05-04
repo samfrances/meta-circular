@@ -1,4 +1,4 @@
-from ..interpreter import seval, create_global_env
+from scheme.interpreter import seval, create_global_env
 
 def test_simple_addition():
     env = create_global_env()

@@ -1,6 +1,6 @@
 import pytest
 
-from ..interpreter import Environment
+from scheme.interpreter import Environment
 
 def test_flat_environment_miss():
 
