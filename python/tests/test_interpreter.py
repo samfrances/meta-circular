@@ -156,3 +156,21 @@ def test_if_statement_short_circuits(if_test):
 def test_let_statement(let_exp, result):
     env = create_global_env()
     assert seval(let_exp, env) == result
+
+
+def test_begin_statement():
+
+    env = create_global_env()
+
+    exp = ("begin", ("+", 1, 2), ("*", 100, 2))
+
+    assert seval(exp, env) == 200
+
+
+def test_begin_statement_executes_all_statements():
+
+    env = create_global_env()
+
+    exp = ("begin", ("define", "x", 7), ("define", "y", 8), ("*", "x", "y"))
+
+    assert seval(exp, env) == 56

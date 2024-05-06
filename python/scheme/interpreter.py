@@ -59,6 +59,8 @@ def seval(exp: ParsedExpression, env: Environment):
         return seval_if_statement(exp, env)
     if is_let(exp):
         return seval_let(exp, env)
+    if (statement_block := begin_expr_statement_block(exp)) is not None:
+        return seval_statement_block(statement_block, env)
     if is_define_exp(exp):
         return seval_define(exp, env)
     if is_proc_define(exp):
@@ -235,3 +237,18 @@ def seval_let(exp: LetStatement, env: Environment):
         localenv.define(name, value)
 
     return seval(body, localenv)
+
+
+# Begin expression
+
+
+def begin_expr_statement_block(exp: ParsedExpression) -> ParsedExpressionList:
+    if is_list(exp) and len(exp) >= 2 and exp[0] == "begin":
+        return exp[1:]
+
+
+def seval_statement_block(exps: ParsedExpressionList, env: Environment):
+    result = None
+    for exp in exps:
+        result = seval(exp, env)
+    return result
