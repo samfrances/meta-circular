@@ -165,7 +165,6 @@ def seval_proc_define(exp: DefineProcExpression, env: Environment):
     proc_name = exp[1]
     header = exp[2]
     body = exp[3]
-    equivalent_lambda = ("lambda", header, body)
-    equivalent_define = ("define", proc_name, equivalent_lambda)
-    print(equivalent_define)
+    equivalent_lambda: ParsedExpression = ("lambda", header, body)
+    equivalent_define: VariableDefinition = ("define", proc_name, equivalent_lambda)
     return seval_define(equivalent_define, env)
