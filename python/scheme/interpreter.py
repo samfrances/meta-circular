@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, Dict, Tuple, Optional, TypeGuard, Union
+from typing import Any, Dict, Literal, Tuple, Optional, TypeGuard, Union
 
 from .common import ParsedExpression, ParsedExpressionList
 
@@ -82,16 +82,17 @@ def is_list(exp: ParsedExpression) -> TypeGuard[ParsedExpressionList]:
 
 # Define
 
-def is_define_exp(exp: ParsedExpression) -> TypeGuard[ParsedExpressionList]:
+VariableDefinition = Tuple[Literal["define"], str, ParsedExpression]
+
+
+def is_define_exp(exp: ParsedExpression) -> TypeGuard[VariableDefinition]:
     return is_list(exp) and len(exp) == 3 and exp[0] == "define"
 
 
-def seval_define(exp: ParsedExpressionList, env: Environment):
+def seval_define(exp: VariableDefinition, env: Environment):
     name = exp[1]
     definition = exp[2]
     value = seval(definition, env)
-    if not isinstance(name, str):
-        raise Exception("Invalid define statement")
     env.define(name, value)
 
 
