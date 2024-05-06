@@ -142,3 +142,17 @@ def test_if_statement_short_circuits(if_test):
 
     assert true_branch_evaluated is if_test
     assert false_branch_evaluated is not if_test
+
+
+@pytest.mark.parametrize(
+    "let_exp,result",
+    [
+        [("let", (("x", 5),), "x"), 5],
+        [("let", (("x", 5), ("y", 4)), ("-", "x", "y")), 1],
+        [("let", (("x", 5), ("y", 4), ("z", ("+", "x", 10))), ("-", "z", "y")), 11],
+        [("let", (("x", 5), ("y", 4), ("z", ("+", "x", 10))), 7), 7],
+    ],
+)
+def test_let_statement(let_exp, result):
+    env = create_global_env()
+    assert seval(let_exp, env) == result

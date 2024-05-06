@@ -57,6 +57,8 @@ def seval(exp: ParsedExpression, env: Environment):
         return env[exp]
     if is_if(exp):
         return seval_if_statement(exp, env)
+    if is_let(exp):
+        return seval_let(exp, env)
     if is_define_exp(exp):
         return seval_define(exp, env)
     if is_proc_define(exp):
@@ -193,3 +195,43 @@ def seval_if_statement(exp: IfStatement, env: Environment):
         return seval(true_branch, env)
     else:
         return seval(false_branch, env)
+
+
+# Let statement
+
+LetAssignment = Tuple[str, ParsedExpression]
+LetStatement = Tuple[Literal["let"], Tuple[LetAssignment, ...], ParsedExpression]
+
+
+def is_let(exp: ParsedExpression) -> TypeGuard[LetStatement]:
+    if not (is_list(exp) and len(exp) == 3 and exp[0] == "let"):
+        return False
+
+    assignments = exp[1]
+    if not is_list(assignments):
+        return False
+
+    for assignment in assignments:
+        if not is_list(assignment):
+            return False
+        if len(assignment) != 2:
+            return False
+        if not isinstance(assignment[0], str):
+            return False
+
+    return True
+
+
+def seval_let(exp: LetStatement, env: Environment):
+    assigments = exp[1]
+    body = exp[2]
+
+    localenv = Environment(env)
+
+    for assignment in assigments:
+        name = assignment[0]
+        value_expr = assignment[1]
+        value = seval(value_expr, localenv)
+        localenv.define(name, value)
+
+    return seval(body, localenv)
