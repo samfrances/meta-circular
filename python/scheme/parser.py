@@ -55,8 +55,8 @@ class ListExpression:
     def closer(self):
         return self._closer
 
-    def to_list(self):
-        return self._items[:]
+    def to_tuple(self):
+        return tuple(self._items[:])
 
 
 class TokenProcessor:
@@ -91,10 +91,10 @@ class CloseParen(TokenProcessor):
             raise SyntaxError(f"Expected closing '{top.closer}'")
         if stack:
             # Add completed list to previous list in stack
-            stack[-1].append(top.to_list())
+            stack[-1].append(top.to_tuple())
         else:
             # Add completed expression to result
-            result.append(top.to_list())
+            result.append(top.to_tuple())
 
 
 class Atom(TokenProcessor):

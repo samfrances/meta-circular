@@ -82,7 +82,6 @@ def is_list(exp: ParsedExpression) -> TypeGuard[ParsedExpressionList]:
 
 # Define
 
-
 def is_define_exp(exp: ParsedExpression) -> TypeGuard[ParsedExpressionList]:
     return is_list(exp) and len(exp) == 3 and exp[0] == "define"
 
@@ -94,3 +93,15 @@ def seval_define(exp: ParsedExpressionList, env: Environment):
     if not isinstance(name, str):
         raise Exception("Invalid define statement")
     env.define(name, value)
+
+
+# Lambda
+
+def is_lambda(exp: ParsedExpression):
+    return (
+        is_list(exp) and
+        len(exp) >= 3 and
+        is_list(exp[1]) and
+        exp[0] == "lambda" and
+        all(isinstance(s, str) for s in exp[1])
+    )
