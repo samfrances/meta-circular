@@ -43,6 +43,9 @@ def create_global_env():
     env.define("-", lambda x, y=None: -x if y is None else x - y)
     env.define("*", operator.mul)
     env.define("/", operator.truediv)
+    env.define("and", operator.and_)
+    env.define("or", operator.or_)
+    env.define("not", operator.not_)
     env.define("display", lambda x: print(x))
     return env
 

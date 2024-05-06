@@ -25,6 +25,27 @@ def test_simple_arithmetic(ast, result):
     assert seval(ast, env) == result
 
 
+@pytest.mark.parametrize(
+    "ast,result",
+    (
+        [("and", True, True), True],
+        [("and", True, False), False],
+        [("and", False, True), False],
+        [("and", False, False), False],
+        [("or", True, True), True],
+        [("or", True, False), True],
+        [("or", False, True), True],
+        [("or", False, False), False],
+        [("not", True), False],
+        [("not", False), True],
+        [("and", ("or", True, False), True), True],
+    ),
+)
+def test_simple_booleans(ast, result):
+    env = create_global_env()
+    assert seval(ast, env) == result
+
+
 def test_define():
     env = create_global_env()
     define_ast = ("define", "foo", ("+", 1, 2))
