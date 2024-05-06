@@ -142,7 +142,6 @@ def make_lambda(header: ProcHeader, body: ParsedExpression, env: Environment):
     def proc(*args):
         localenv = Environment(env)
         for var_name, val in zip(header, args):
-            print(var_name, val)
             localenv.define(var_name, val)
         if len(args) != len(header):
             raise Exception(f"Arity error, expected {len(header)}, got {len(args)}")
