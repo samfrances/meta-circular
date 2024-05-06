@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Generator, List, Literal, Tuple, Union
+from typing import Dict, Generator, List, Literal
 
 from .common import ParsedExpression
 

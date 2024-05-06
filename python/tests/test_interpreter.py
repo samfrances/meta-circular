@@ -33,51 +33,34 @@ def test_define():
 
 
 LAMBDA_CASES = [
-    [
-        "incr",
-        ("x",), ("+", "x", 1),
-        (21,),
-        22
-    ],
-    [
-        "add",
-        ("x", "y"), ("+", "x", "y"),
-        (21, 22),
-        43
-    ],
+    ["incr", ("x",), ("+", "x", 1), (21,), 22],
+    ["add", ("x", "y"), ("+", "x", "y"), (21, 22), 43],
 ]
 
 
-@pytest.mark.parametrize(
-    "lambda_name,header,body,args,result",
-    LAMBDA_CASES
-)
+@pytest.mark.parametrize("lambda_name,header,body,args,result", LAMBDA_CASES)
 def test_lambda(lambda_name, header, body, args, result):
     env = create_global_env()
 
     lambda_expr = ("lambda", header, body)
 
     # inline
-    assert seval(
-        (lambda_expr, *args),
-        env
-    ) == result
+    assert seval((lambda_expr, *args), env) == result
 
     # with define
     define_ast = ("define", lambda_name, lambda_expr)
     seval(define_ast, env)
     assert seval((lambda_name, *args), env) == result
 
-@pytest.mark.parametrize(
-    "proc_name,header,body,args,result",
-    LAMBDA_CASES
-)
+
+@pytest.mark.parametrize("proc_name,header,body,args,result", LAMBDA_CASES)
 def test_function_define(proc_name, header, body, args, result):
     env = create_global_env()
 
     define_ast = ("define", proc_name, header, body)
     seval(define_ast, env)
     assert seval((proc_name, *args), env) == result
+
 
 def test_lambda_closure():
 
@@ -89,10 +72,7 @@ def test_lambda_closure():
 
     add4 = "add4"
 
-    seval(
-        ("define", add4, (proc_name, 4)),
-        env
-    )
+    seval(("define", add4, (proc_name, 4)), env)
 
     assert seval((add4, 7), env) == 11
 

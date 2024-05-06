@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, Dict, Literal, Tuple, Optional, TypeGuard, Union
+from typing import Any, Dict, Literal, Tuple, Optional, TypeGuard
 
 from .common import ParsedExpression, ParsedExpressionList
 
@@ -23,7 +23,7 @@ class Environment:
     def __getitem__(self, key: str):
         try:
             return self._table[key]
-        except KeyError as e:
+        except KeyError:
             return self._enclosing[key]
 
     def __setitem__(self, key: str, value):
@@ -64,7 +64,9 @@ def seval(exp: ParsedExpression, env: Environment):
         return sapply(func_name_or_expr, func_args, env)
 
 
-def sapply(proc_name: ParsedExpression, proc_args: ParsedExpressionList, env: Environment):
+def sapply(
+    proc_name: ParsedExpression, proc_args: ParsedExpressionList, env: Environment
+):
     proc = seval(proc_name, env)
     if not callable(proc):
         raise Exception("Invalid function application")
@@ -90,7 +92,12 @@ VariableDefinition = Tuple[Literal["define"], str, ParsedExpression]
 
 
 def is_define_exp(exp: ParsedExpression) -> TypeGuard[VariableDefinition]:
-    return is_list(exp) and len(exp) == 3 and exp[0] == "define" and isinstance(exp[1], str)
+    return (
+        is_list(exp)
+        and len(exp) == 3
+        and exp[0] == "define"
+        and isinstance(exp[1], str)
+    )
 
 
 def seval_define(exp: VariableDefinition, env: Environment):
@@ -105,20 +112,21 @@ def seval_define(exp: VariableDefinition, env: Environment):
 ProcHeader = Tuple[str, ...]
 LambdaExpression = Tuple[Literal["lambda"], ProcHeader, ParsedExpression]
 
+
 def is_lambda(exp: ParsedExpression) -> TypeGuard[LambdaExpression]:
     return (
-        is_list(exp) and
-        len(exp) == 3 and
-        exp[0] == "lambda" and
-        is_proc_header(exp[1])
+        is_list(exp) and len(exp) == 3 and exp[0] == "lambda" and is_proc_header(exp[1])
     )
+
 
 def is_proc_header(exp: ParsedExpression) -> TypeGuard[ProcHeader]:
     return is_list(exp) and all(isinstance(s, str) for s in exp)
 
+
 def seval_lambda(exp: LambdaExpression, env: Environment):
     header, body = exp[1:]
     return make_lambda(header, body, env)
+
 
 def make_lambda(header: ProcHeader, body: ParsedExpression, env: Environment):
 
@@ -138,14 +146,16 @@ def make_lambda(header: ProcHeader, body: ParsedExpression, env: Environment):
 
 DefineProcExpression = Tuple[Literal["define"], str, ProcHeader, ParsedExpression]
 
+
 def is_proc_define(exp: ParsedExpression) -> TypeGuard[DefineProcExpression]:
     return (
-        is_list(exp) and
-        len(exp) == 4 and
-        exp[0] == "define" and
-        isinstance(exp[1], str) and
-        is_proc_header(exp[2])
+        is_list(exp)
+        and len(exp) == 4
+        and exp[0] == "define"
+        and isinstance(exp[1], str)
+        and is_proc_header(exp[2])
     )
+
 
 def seval_proc_define(exp: DefineProcExpression, env: Environment):
     """
