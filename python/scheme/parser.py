@@ -139,13 +139,18 @@ def read(tokens: Generator[TokenProcessor, None, None]):
         token.process(stack, result)
 
     if stack:
-        raise SyntaxError("Missing expected )")
+        raise MissingClosingParenError("Missing expected )")
 
     return result
 
 
+class MissingClosingParenError(SyntaxError):
+    pass
+
+
 def parse(s: str):
     return read(tokenize(s))
+
 
 
 # References:
