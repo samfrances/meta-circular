@@ -54,6 +54,8 @@ def seval(exp: ParsedExpression, env: Environment):
         return env[exp]
     if is_define_exp(exp):
         return seval_define(exp, env)
+    if is_lambda(exp):
+        return seval_lambda(exp, env)
     if is_list(exp):
         func_name_or_expr = exp[0]
         func_args = exp[1:]
@@ -98,11 +100,30 @@ def seval_define(exp: VariableDefinition, env: Environment):
 
 # Lambda
 
-def is_lambda(exp: ParsedExpression):
+LambdaExpression = Tuple[Literal["lambda"], Tuple[str, ...], ParsedExpression]
+
+def is_lambda(exp: ParsedExpression) -> TypeGuard[LambdaExpression]:
     return (
         is_list(exp) and
-        len(exp) >= 3 and
-        is_list(exp[1]) and
+        len(exp) == 3 and
         exp[0] == "lambda" and
+        is_list(exp[1]) and
         all(isinstance(s, str) for s in exp[1])
     )
+
+def seval_lambda(exp: LambdaExpression, env: Environment):
+    header, body = exp[1:]
+    return make_lambda(header, body, env)
+
+def make_lambda(header: Tuple[str, ...], body: ParsedExpression, env: Environment):
+
+    def proc(*args):
+        localenv = Environment(env)
+        for var_name, val in zip(header, args):
+            print(var_name, val)
+            localenv.define(var_name, val)
+        if len(args) != len(header):
+            raise Exception(f"Arity error, expected {len(header)}, got {len(args)}")
+        return seval(body, localenv)
+
+    return proc
