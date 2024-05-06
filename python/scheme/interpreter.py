@@ -55,6 +55,8 @@ def seval(exp: ParsedExpression, env: Environment):
         return exp
     if is_symbol(exp):
         return env[exp]
+    if is_if(exp):
+        return seval_if_statement(exp, env)
     if is_define_exp(exp):
         return seval_define(exp, env)
     if is_proc_define(exp):
@@ -171,3 +173,23 @@ def seval_proc_define(exp: DefineProcExpression, env: Environment):
     equivalent_lambda: ParsedExpression = ("lambda", header, body)
     equivalent_define: VariableDefinition = ("define", proc_name, equivalent_lambda)
     return seval_define(equivalent_define, env)
+
+
+# if statement
+
+IfStatement = Tuple[Literal["if"], ParsedExpression, ParsedExpression, ParsedExpression]
+
+
+def is_if(exp: ParsedExpression) -> TypeGuard[IfStatement]:
+    return is_list(exp) and len(exp) == 4 and exp[0] == "if"
+
+
+def seval_if_statement(exp: IfStatement, env: Environment):
+    test = exp[1]
+    true_branch = exp[2]
+    false_branch = exp[3]
+
+    if seval(test, env):
+        return seval(true_branch, env)
+    else:
+        return seval(false_branch, env)

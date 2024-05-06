@@ -98,3 +98,47 @@ def test_lambda_closure():
     assert seval((add4, 7), env) == 11
 
     assert seval((add4, 100), env) == 104
+
+
+@pytest.mark.parametrize(
+    "statement,result",
+    [
+        [("if", True, 1, 3), 1],
+        [("if", False, 1, 3), 3],
+        [("if", ("or", True, False), 1, 3), 1],
+        [("if", ("and", True, False), 1, 3), 3],
+        [("if", True, ("+", 4, 8), ("-", 3)), 12],
+        [("if", False, ("+", 4, 8), ("-", 3)), -3],
+    ],
+)
+def test_if_statement(statement, result):
+    env = create_global_env()
+    assert seval(statement, env) == result
+
+
+@pytest.mark.parametrize("if_test", [True, False])
+def test_if_statement_short_circuits(if_test):
+
+    true_branch_evaluated = False
+    false_branch_evaluated = False
+
+    def check_true(n):
+        nonlocal true_branch_evaluated
+        true_branch_evaluated = True
+        return n
+
+    def check_false(n):
+        nonlocal false_branch_evaluated
+        false_branch_evaluated = True
+        return n
+
+    env = create_global_env()
+    env.define("check_true", check_true)
+    env.define("check_false", check_false)
+
+    statement = ("if", if_test, ("check_true", 1), ("check_false", 1))
+
+    seval(statement, env)
+
+    assert true_branch_evaluated is if_test
+    assert false_branch_evaluated is not if_test
