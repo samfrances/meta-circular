@@ -54,6 +54,8 @@ def seval(exp: ParsedExpression, env: Environment):
         return env[exp]
     if is_define_exp(exp):
         return seval_define(exp, env)
+    if is_proc_define(exp):
+        return seval_proc_define(exp, env)
     if is_lambda(exp):
         return seval_lambda(exp, env)
     if is_list(exp):
@@ -88,7 +90,7 @@ VariableDefinition = Tuple[Literal["define"], str, ParsedExpression]
 
 
 def is_define_exp(exp: ParsedExpression) -> TypeGuard[VariableDefinition]:
-    return is_list(exp) and len(exp) == 3 and exp[0] == "define"
+    return is_list(exp) and len(exp) == 3 and exp[0] == "define" and isinstance(exp[1], str)
 
 
 def seval_define(exp: VariableDefinition, env: Environment):
@@ -100,22 +102,25 @@ def seval_define(exp: VariableDefinition, env: Environment):
 
 # Lambda
 
-LambdaExpression = Tuple[Literal["lambda"], Tuple[str, ...], ParsedExpression]
+ProcHeader = Tuple[str, ...]
+LambdaExpression = Tuple[Literal["lambda"], ProcHeader, ParsedExpression]
 
 def is_lambda(exp: ParsedExpression) -> TypeGuard[LambdaExpression]:
     return (
         is_list(exp) and
         len(exp) == 3 and
         exp[0] == "lambda" and
-        is_list(exp[1]) and
-        all(isinstance(s, str) for s in exp[1])
+        is_proc_header(exp[1])
     )
+
+def is_proc_header(exp: ParsedExpression) -> TypeGuard[ProcHeader]:
+    return is_list(exp) and all(isinstance(s, str) for s in exp)
 
 def seval_lambda(exp: LambdaExpression, env: Environment):
     header, body = exp[1:]
     return make_lambda(header, body, env)
 
-def make_lambda(header: Tuple[str, ...], body: ParsedExpression, env: Environment):
+def make_lambda(header: ProcHeader, body: ParsedExpression, env: Environment):
 
     def proc(*args):
         localenv = Environment(env)
@@ -127,3 +132,30 @@ def make_lambda(header: Tuple[str, ...], body: ParsedExpression, env: Environmen
         return seval(body, localenv)
 
     return proc
+
+
+# Function definition syntactic_sugar
+
+DefineProcExpression = Tuple[Literal["define"], str, ProcHeader, ParsedExpression]
+
+def is_proc_define(exp: ParsedExpression) -> TypeGuard[DefineProcExpression]:
+    return (
+        is_list(exp) and
+        len(exp) == 4 and
+        exp[0] == "define" and
+        isinstance(exp[1], str) and
+        is_proc_header(exp[2])
+    )
+
+def seval_proc_define(exp: DefineProcExpression, env: Environment):
+    """
+    Evaluate function define syntactic sugar by transforming into
+    the equivalent that uses a lambda expression before evaluating
+    """
+    proc_name = exp[1]
+    header = exp[2]
+    body = exp[3]
+    equivalent_lambda = ("lambda", header, body)
+    equivalent_define = ("define", proc_name, equivalent_lambda)
+    print(equivalent_define)
+    return seval_define(equivalent_define, env)
