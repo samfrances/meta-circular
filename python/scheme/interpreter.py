@@ -47,6 +47,7 @@ def create_global_env():
     env.define("or", operator.or_)
     env.define("not", operator.not_)
     env.define("display", lambda x: print(x))
+    env.define("newline", lambda: print())
     return env
 
 
