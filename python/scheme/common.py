@@ -1,5 +1,5 @@
-from typing import List, Union
+from typing import Tuple, Union
 
-ParsedExpressionList = List[Union[float, int, str, "ParsedExpression"]]
+ParsedExpressionList = Tuple[Union[float, int, str, "ParsedExpression"], ...]
 
 ParsedExpression = Union[float, int, str, ParsedExpressionList]

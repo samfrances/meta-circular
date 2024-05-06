@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, Dict, List, Optional, TypeGuard
+from typing import Any, Dict, Tuple, Optional, TypeGuard, Union
 
 from .common import ParsedExpression, ParsedExpressionList
 
@@ -55,15 +55,15 @@ def seval(exp: ParsedExpression, env: Environment):
     if is_define_exp(exp):
         return seval_define(exp, env)
     if is_list(exp):
-        func_name = exp[0]
+        func_name_or_expr = exp[0]
         func_args = exp[1:]
-        if not isinstance(func_name, str):
-            raise Exception("Invalid function application")
-        return sapply(func_name, func_args, env)
+        return sapply(func_name_or_expr, func_args, env)
 
 
-def sapply(proc_name: str, proc_args: List[ParsedExpression], env: Environment):
+def sapply(proc_name: ParsedExpression, proc_args: ParsedExpressionList, env: Environment):
     proc = seval(proc_name, env)
+    if not callable(proc):
+        raise Exception("Invalid function application")
     args = [seval(a, env) for a in proc_args]
     return proc(*args)
 
