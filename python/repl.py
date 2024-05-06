@@ -19,7 +19,7 @@ while True:
             awaiting_further_input = False
         if result is not None:
             print(result)
-    except MissingClosingParenError as e:
+    except MissingClosingParenError:
         awaiting_further_input = True
         continue
     except Exception as e:
