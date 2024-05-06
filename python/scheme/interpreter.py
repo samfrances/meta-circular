@@ -77,7 +77,7 @@ def is_symbol(exp: ParsedExpression) -> TypeGuard[str]:
 
 
 def is_list(exp: ParsedExpression) -> TypeGuard[ParsedExpressionList]:
-    return isinstance(exp, list)
+    return isinstance(exp, tuple)
 
 
 # Define
