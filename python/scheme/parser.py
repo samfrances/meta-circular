@@ -110,6 +110,13 @@ class Atom(TokenProcessor):
             top.append(self._typed_atom())
 
     def _typed_atom(self):
+
+        if self._token == "#true":
+            return True
+
+        if self._token == "#false":
+            return False
+
         try:
             return int(self._token)
         except ValueError:

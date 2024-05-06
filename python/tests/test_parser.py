@@ -32,6 +32,9 @@ from scheme.parser import parse
         ("a", ["a"]),
         ("a (foo 1 2) b", ["a", ("foo", 1, 2), "b"]),
         ("1", [1]),
+        ("#true", [True]),
+        ("#false", [False]),
+        ("(#true b (c #false))", [(True, "b", ("c", False))]),
     ),
 )
 def test_parser_on_valid_inputs(input, parsed):
