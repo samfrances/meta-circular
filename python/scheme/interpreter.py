@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, Dict, Literal, Tuple, Optional, TypeGuard
+from typing import Any, Dict, Tuple, Optional, TypeGuard
 
 from .common import ParsedExpression, ParsedExpressionList
 
@@ -52,26 +52,24 @@ def create_global_env():
 
 
 def seval(exp: ParsedExpression, env: Environment):
-    if is_primitive(exp):
-        return exp
-    if is_symbol(exp):
-        return env[exp]
-    if is_if(exp):
-        return seval_if_statement(exp, env)
-    if is_let(exp):
-        return seval_let(exp, env)
-    if (statement_block := begin_expr_statement_block(exp)) is not None:
-        return seval_statement_block(statement_block, env)
-    if is_define_exp(exp):
-        return seval_define(exp, env)
-    if is_proc_define(exp):
-        return seval_proc_define(exp, env)
-    if is_lambda(exp):
-        return seval_lambda(exp, env)
-    if is_list(exp):
-        func_name_or_expr = exp[0]
-        func_args = exp[1:]
-        return sapply(func_name_or_expr, func_args, env)
+    ORDER_OF_EXPRESSION_TYPES = (
+        Primitive.from_parsed_expression,  # Not preferred, but needed for mypy
+        Symbol.from_parsed_expression,
+        IfStatement.from_parsed_expression,
+        LetStatement.from_parsed_expression,
+        BeginExpression.from_parsed_expression,
+        VariableDefinition.from_parsed_expression,
+        DefineProcExpression.from_parsed_expression,
+        LambdaExpression.from_parsed_expression,
+        ProcApplication.from_parsed_expression,
+    )
+
+    for exp_type in ORDER_OF_EXPRESSION_TYPES:
+        exp_for_evaluation = exp_type(exp)
+        if exp_for_evaluation is not None:
+            return exp_for_evaluation.seval(env)
+    else:
+        raise Exception("Bad expression")
 
 
 def sapply(
@@ -84,171 +82,321 @@ def sapply(
     return proc(*args)
 
 
-def is_primitive(exp: ParsedExpression) -> float | int:
-    return isinstance(exp, float) or isinstance(exp, int)
-
-
-def is_symbol(exp: ParsedExpression) -> TypeGuard[str]:
-    return isinstance(exp, str)
-
-
 def is_list(exp: ParsedExpression) -> TypeGuard[ParsedExpressionList]:
     return isinstance(exp, tuple)
 
 
+# procedure application
+
+
+class ProcApplication:
+
+    _proc_name_or_expr: ParsedExpression
+    _proc_args: ParsedExpressionList
+
+    def __init__(
+        self, proc_name_or_expr: ParsedExpression, proc_args: ParsedExpressionList
+    ):
+        self._proc_name_or_expr = proc_name_or_expr
+        self._proc_args = proc_args
+
+    @classmethod
+    def from_parsed_expression(cls, exp: ParsedExpression) -> Optional[ProcApplication]:
+        if not is_list(exp):
+            return None
+
+        proc_name_or_expr = exp[0]
+        proc_args: ParsedExpressionList = exp[1:]
+
+        return cls(proc_name_or_expr, proc_args)
+
+    def seval(self, env: Environment):
+        return sapply(self._proc_name_or_expr, self._proc_args, env)
+
+
+# primitive
+
+
+class Primitive:
+
+    _value: float | int | bool
+
+    def __init__(self, value: float | int | bool):
+        self._value = value
+
+    @classmethod
+    def from_parsed_expression(cls, exp: ParsedExpression) -> Optional[Primitive]:
+        if not (
+            isinstance(exp, float) or isinstance(exp, int) or isinstance(exp, bool)
+        ):
+            return None
+
+        return cls(exp)
+
+    def seval(self, _env: Environment):
+        return self._value
+
+
+# Symbol
+
+
+class Symbol:
+
+    _name: str
+
+    def __init__(self, name: str):
+        self._name = name
+
+    @classmethod
+    def from_parsed_expression(cls, exp: ParsedExpression) -> Optional[Symbol]:
+        if not isinstance(exp, str):
+            return None
+
+        return cls(exp)
+
+    def seval(self, env: Environment):
+        return env[self._name]
+
+
 # Define
 
-VariableDefinition = Tuple[Literal["define"], str, ParsedExpression]
 
+class VariableDefinition:
 
-def is_define_exp(exp: ParsedExpression) -> TypeGuard[VariableDefinition]:
-    return (
-        is_list(exp)
-        and len(exp) == 3
-        and exp[0] == "define"
-        and isinstance(exp[1], str)
-    )
+    _name: str
+    _definition: ParsedExpression
 
+    def __init__(self, name: str, definition: ParsedExpression):
+        self._name = name
+        self._definition = definition
 
-def seval_define(exp: VariableDefinition, env: Environment):
-    name = exp[1]
-    definition = exp[2]
-    value = seval(definition, env)
-    env.define(name, value)
+    @classmethod
+    def from_parsed_expression(
+        cls, exp: ParsedExpression
+    ) -> Optional[VariableDefinition]:
+        if not (is_list(exp) and len(exp) == 3 and exp[0] == "define"):
+            return None
+
+        name = exp[1]
+        if not isinstance(name, str):
+            return None
+
+        definition = exp[2]
+
+        return cls(name, definition)
+
+    def seval(self, env: Environment):
+        value = seval(self._definition, env)
+        env.define(self._name, value)
 
 
 # Lambda
 
 ProcHeader = Tuple[str, ...]
-LambdaExpression = Tuple[Literal["lambda"], ProcHeader, ParsedExpression]
-
-
-def is_lambda(exp: ParsedExpression) -> TypeGuard[LambdaExpression]:
-    return (
-        is_list(exp) and len(exp) == 3 and exp[0] == "lambda" and is_proc_header(exp[1])
-    )
 
 
 def is_proc_header(exp: ParsedExpression) -> TypeGuard[ProcHeader]:
     return is_list(exp) and all(isinstance(s, str) for s in exp)
 
 
-def seval_lambda(exp: LambdaExpression, env: Environment):
-    header, body = exp[1:]
-    return make_lambda(header, body, env)
+class LambdaExpression:
 
+    _header: ProcHeader
+    _body: ParsedExpression
 
-def make_lambda(header: ProcHeader, body: ParsedExpression, env: Environment):
+    def __init__(self, header: ProcHeader, body: ParsedExpression):
+        self._header = header
+        self._body = body
 
-    def proc(*args):
-        localenv = Environment(env)
-        for var_name, val in zip(header, args):
-            localenv.define(var_name, val)
-        if len(args) != len(header):
-            raise Exception(f"Arity error, expected {len(header)}, got {len(args)}")
-        return seval(body, localenv)
+    @classmethod
+    def from_parsed_expression(
+        cls, exp: ParsedExpression
+    ) -> Optional[LambdaExpression]:
+        if not (is_list(exp) and len(exp) == 3 and exp[0] == "lambda"):
+            return None
 
-    return proc
+        header = exp[1]
+
+        if not is_proc_header(header):
+            return None
+
+        body = exp[2]
+
+        return cls(header, body)
+
+    def seval(self, env: Environment):
+        header = self._header
+        body = self._body
+
+        def proc(*args):
+            localenv = Environment(env)
+            for var_name, val in zip(header, args):
+                localenv.define(var_name, val)
+            if len(args) != len(header):
+                raise Exception(f"Arity error, expected {len(header)}, got {len(args)}")
+            return seval(body, localenv)
+
+        return proc
 
 
 # Function definition syntactic_sugar
 
-DefineProcExpression = Tuple[Literal["define"], str, ProcHeader, ParsedExpression]
+
+class DefineProcExpression:
+
+    _name: str
+    _header: ProcHeader
+    _body: ParsedExpression
+
+    def __init__(self, name: str, header: ProcHeader, body: ParsedExpression):
+        self._name = name
+        self._header = header
+        self._body = body
+
+    @classmethod
+    def from_parsed_expression(
+        cls, exp: ParsedExpression
+    ) -> Optional[DefineProcExpression]:
+        if not (is_list(exp) and len(exp) == 4 and exp[0] == "define"):
+            return None
+
+        name = exp[1]
+        if not isinstance(name, str):
+            return None
+
+        header = exp[2]
+        if not is_proc_header(header):
+            return None
+
+        body = exp[3]
+
+        return cls(name, header, body)
+
+    def seval(self, env: Environment):
+        """
+        Evaluate function define syntactic sugar by transforming into
+        the equivalent that uses a lambda expression before evaluating
+        """
+        equivalent_lambda: ParsedExpression = ("lambda", self._header, self._body)
+        equivalent_define = VariableDefinition(self._name, equivalent_lambda)
+        return equivalent_define.seval(env)
 
 
-def is_proc_define(exp: ParsedExpression) -> TypeGuard[DefineProcExpression]:
-    return (
-        is_list(exp)
-        and len(exp) == 4
-        and exp[0] == "define"
-        and isinstance(exp[1], str)
-        and is_proc_header(exp[2])
-    )
+# If statement
 
 
-def seval_proc_define(exp: DefineProcExpression, env: Environment):
-    """
-    Evaluate function define syntactic sugar by transforming into
-    the equivalent that uses a lambda expression before evaluating
-    """
-    proc_name = exp[1]
-    header = exp[2]
-    body = exp[3]
-    equivalent_lambda: ParsedExpression = ("lambda", header, body)
-    equivalent_define: VariableDefinition = ("define", proc_name, equivalent_lambda)
-    return seval_define(equivalent_define, env)
+class IfStatement:
 
+    _test: ParsedExpression
+    _true_branch: ParsedExpression
+    _false_branch: ParsedExpression
 
-# if statement
+    def __init__(
+        self,
+        test: ParsedExpression,
+        true_branch: ParsedExpression,
+        false_branch: ParsedExpression,
+    ):
+        self._test = test
+        self._true_branch = true_branch
+        self._false_branch = false_branch
 
-IfStatement = Tuple[Literal["if"], ParsedExpression, ParsedExpression, ParsedExpression]
+    @classmethod
+    def from_parsed_expression(cls, exp: ParsedExpression) -> Optional[IfStatement]:
+        if not (is_list(exp) and len(exp) == 4 and exp[0] == "if"):
+            return None
 
+        test = exp[1]
+        true_branch = exp[2]
+        false_branch = exp[3]
 
-def is_if(exp: ParsedExpression) -> TypeGuard[IfStatement]:
-    return is_list(exp) and len(exp) == 4 and exp[0] == "if"
+        return cls(test, true_branch, false_branch)
 
-
-def seval_if_statement(exp: IfStatement, env: Environment):
-    test = exp[1]
-    true_branch = exp[2]
-    false_branch = exp[3]
-
-    if seval(test, env):
-        return seval(true_branch, env)
-    else:
-        return seval(false_branch, env)
+    def seval(self, env: Environment):
+        if seval(self._test, env):
+            return seval(self._true_branch, env)
+        else:
+            return seval(self._false_branch, env)
 
 
 # Let statement
 
 LetAssignment = Tuple[str, ParsedExpression]
-LetStatement = Tuple[Literal["let"], Tuple[LetAssignment, ...], ParsedExpression]
 
 
-def is_let(exp: ParsedExpression) -> TypeGuard[LetStatement]:
-    if not (is_list(exp) and len(exp) == 3 and exp[0] == "let"):
+def is_let_assignment(exp: ParsedExpression) -> TypeGuard[LetAssignment]:
+    if not is_list(exp):
         return False
-
-    assignments = exp[1]
-    if not is_list(assignments):
+    if len(exp) != 2:
         return False
-
-    for assignment in assignments:
-        if not is_list(assignment):
-            return False
-        if len(assignment) != 2:
-            return False
-        if not isinstance(assignment[0], str):
-            return False
-
+    if not isinstance(exp[0], str):
+        return False
     return True
 
 
-def seval_let(exp: LetStatement, env: Environment):
-    assigments = exp[1]
-    body = exp[2]
+class LetStatement:
 
-    localenv = Environment(env)
+    _assignments: Tuple[LetAssignment, ...]
+    _body: ParsedExpression
 
-    for assignment in assigments:
-        name = assignment[0]
-        value_expr = assignment[1]
-        value = seval(value_expr, localenv)
-        localenv.define(name, value)
+    def __init__(self, assignments: Tuple[LetAssignment, ...], body: ParsedExpression):
+        self._assignments = assignments
+        self._body = body
 
-    return seval(body, localenv)
+    @classmethod
+    def from_parsed_expression(cls, exp: ParsedExpression) -> Optional[LetStatement]:
+        if not (is_list(exp) and len(exp) == 3 and exp[0] == "let"):
+            return None
+
+        assignments = exp[1]
+        if not is_list(assignments):
+            return None
+
+        typed_assignments: list[LetAssignment] = []
+        for assignment in assignments:
+            if is_let_assignment(assignment):
+                typed_assignments.append(assignment)
+            else:
+                return None
+
+        body = exp[2]
+
+        return cls(tuple(typed_assignments), body)
+
+    def seval(self, env: Environment):
+        assigments = self._assignments
+        body = self._body
+
+        localenv = Environment(env)
+
+        for assignment in assigments:
+            name = assignment[0]
+            value_expr = assignment[1]
+            value = seval(value_expr, localenv)
+            localenv.define(name, value)
+
+        return seval(body, localenv)
 
 
 # Begin expression
 
 
-def begin_expr_statement_block(exp: ParsedExpression) -> ParsedExpressionList:
-    if is_list(exp) and len(exp) >= 2 and exp[0] == "begin":
-        return exp[1:]
+class BeginExpression:
 
+    _statements: ParsedExpressionList
 
-def seval_statement_block(exps: ParsedExpressionList, env: Environment):
-    result = None
-    for exp in exps:
-        result = seval(exp, env)
-    return result
+    def __init__(self, statements: ParsedExpressionList):
+        self._statements = statements
+
+    @classmethod
+    def from_parsed_expression(cls, exp: ParsedExpression):
+        if not (is_list(exp) and len(exp) >= 2 and exp[0] == "begin"):
+            return
+
+        return cls(exp[1:])
+
+    def seval(self, env: Environment):
+        result = None
+        for exp in self._statements:
+            result = seval(exp, env)
+        return result

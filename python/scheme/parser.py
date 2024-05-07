@@ -135,8 +135,6 @@ def read(tokens: Generator[TokenProcessor, None, None]):
     result: List[ParsedExpression] = []
     stack: List[ListExpression] = []
 
-    tokens = list(tokens)
-
     for token in tokens:
         token.process(stack, result)
 
