@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import operator
 from typing import Any, Dict, Tuple, Optional, TypeGuard
 
 from .common import ParsedExpression, ParsedExpressionList
+from . import sch_builtins
 
 
 class NullEnvironment:
@@ -39,15 +39,15 @@ class Environment:
 
 def create_global_env():
     env = Environment()
-    env.define("+", operator.add)
-    env.define("-", lambda x, y=None: -x if y is None else x - y)
-    env.define("*", operator.mul)
-    env.define("/", operator.truediv)
-    env.define("and", operator.and_)
-    env.define("or", operator.or_)
-    env.define("not", operator.not_)
-    env.define("display", lambda x: print(x))
-    env.define("newline", lambda: print())
+    env.define("+", sch_builtins.add)
+    env.define("-", sch_builtins.minus)
+    env.define("*", sch_builtins.mul)
+    env.define("/", sch_builtins.truediv)
+    env.define("and", sch_builtins.and_)
+    env.define("or", sch_builtins.or_)
+    env.define("not", sch_builtins.not_)
+    env.define("display", sch_builtins.display)
+    env.define("newline", sch_builtins.newline)
     return env
 
 
