@@ -225,19 +225,21 @@ class LambdaExpression:
         return cls(header, body)
 
     def seval(self, env: Environment):
-        header = self._header
-        body = self._body
+        return self._make_lambda(self._header, self._body, env)
 
+    def _make_lambda(self, header: ProcHeader, body: ParsedExpression, env: Environment):
         def proc(*args):
             localenv = Environment(env)
             for var_name, val in zip(header, args):
                 localenv.define(var_name, val)
-            if len(args) != len(header):
+            if len(args) > len(header):
                 raise Exception(f"Arity error, expected {len(header)}, got {len(args)}")
+            if len(args) < len(header):
+                remaining_arg_names = header[len(args):]
+                return self._make_lambda(remaining_arg_names, body, localenv)
             return seval(body, localenv)
 
         return proc
-
 
 # Function definition syntactic_sugar
 

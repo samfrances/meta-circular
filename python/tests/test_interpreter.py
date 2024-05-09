@@ -174,3 +174,18 @@ def test_begin_statement_executes_all_statements():
     exp = ("begin", ("define", "x", 7), ("define", "y", 8), ("*", "x", "y"))
 
     assert seval(exp, env) == 56
+
+
+def test_haskell_style_partial_application():
+
+    env = create_global_env()
+
+    define_add = ("define", "add", ("x", "y"), ("+", "x", "y"))
+
+    seval(define_add, env)
+
+    define_incr = ("define", "incr", ("add", 1))
+
+    seval(define_incr, env)
+
+    assert seval(("incr", 5), env) == 6
