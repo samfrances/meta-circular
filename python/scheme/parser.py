@@ -11,6 +11,28 @@ OPENER_TO_CLOSER: Dict[str, Literal[")", "]", "}"]] = {
 }
 
 
+OPENERS = tuple(OPENER_TO_CLOSER.keys())
+CLOSERS = tuple(OPENER_TO_CLOSER.values())
+
+
+def parse(s: str):
+    return read(tokenize(s))
+
+
+def read(tokens: Generator[TokenProcessor, None, None]):
+
+    result: List[ParsedExpression] = []
+    stack: List[ListExpression] = []
+
+    for token in tokens:
+        token.process(stack, result)
+
+    if stack:
+        raise MissingClosingParenError("Missing expected )")
+
+    return result
+
+
 def tokenize(chars: str) -> Generator[TokenProcessor, None, None]:
     STRING_TOKENS = (
         chars.replace("(", " ( ")
@@ -21,9 +43,6 @@ def tokenize(chars: str) -> Generator[TokenProcessor, None, None]:
         .replace("}", " } ")
         .split()
     )
-
-    OPENERS = tuple(OPENER_TO_CLOSER.keys())
-    CLOSERS = tuple(OPENER_TO_CLOSER.values())
 
     for s_token in STRING_TOKENS:
         if s_token in OPENERS:
@@ -70,6 +89,10 @@ class TokenProcessor:
 
 
 class OpenParen(TokenProcessor):
+    """
+    Parses open parentheses with the particular "opener" specified
+    e.g. ( [ or {
+    """
 
     def __init__(self, token):
         self._token = token
@@ -79,6 +102,10 @@ class OpenParen(TokenProcessor):
 
 
 class CloseParen(TokenProcessor):
+    """
+    Parses closing parentheses, making sure that the type of
+    paren matches the current open paren
+    """
 
     def __init__(self, token: str):
         self._closer = token
@@ -98,6 +125,9 @@ class CloseParen(TokenProcessor):
 
 
 class Atom(TokenProcessor):
+    """
+    Parses atomic values
+    """
 
     def __init__(self, token: str):
         self._token = token
@@ -130,26 +160,8 @@ class Atom(TokenProcessor):
         return self._token
 
 
-def read(tokens: Generator[TokenProcessor, None, None]):
-
-    result: List[ParsedExpression] = []
-    stack: List[ListExpression] = []
-
-    for token in tokens:
-        token.process(stack, result)
-
-    if stack:
-        raise MissingClosingParenError("Missing expected )")
-
-    return result
-
-
 class MissingClosingParenError(SyntaxError):
     pass
-
-
-def parse(s: str):
-    return read(tokenize(s))
 
 
 # References:
